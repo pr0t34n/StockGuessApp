@@ -13,9 +13,7 @@ The app requires a dataset consisting of a dict in the form dict[stock ticker sy
 first install all needed reqs with 
 ```pip install -r requirements.txt```
 
-Then, on your first launch, make sure to update the master dictionary file. This will take up about 1 GB space, so please ensure you've got the room for it.
-
-```python app.py -u```
+Then, on your first launch, make sure to update the master dictionary file with: ```python app.py -u```. This will take up about 1 GB space, so please ensure you've got the room for it.
 
 Run with ```python app.py -tX``` where X is your default time display window (3, 6, or 12 [months]). No option defaults to a 6 month view
 
