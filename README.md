@@ -17,3 +17,11 @@ Then, on your first launch, make sure to update the master dictionary file. This
 
 ```python app.py -u```
 
+Run with ```python app.py -tX``` where X is your default time display window (3, 6, or 12 [months]). No option defaults to a 6 month view
+
+'Save and Reset' button will save the current session data (datetime, current funds, number of wins, return pct, etc.) to a csv file in the local directory
+
+# Known Issues
+* Stoplosses must be placed in the following order: Buy, set stoploss value, check Stoploss checkbox
+* The graphs do not display dates. This is **by design**. I wanted to not be influenced by known bear/bull market trends
+* There's some weirdness with selling after a stoploss has been executed, diagnosing
