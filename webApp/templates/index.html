@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Guess App 2.0{% endblock %}
+
+{% block content %}
+<div class="row">
+	<div class="col-5">
+		<div class='row'>
+			<div class="container px-2">
+				<h2>Stock Graph</h2>
+				<hr>
+				<img src="{{ url_for('static', filename="stock_img_tmp.png")}}" class="img-fluid" id="stock_image" align="left" />
+			</div>
+		</div>
+		<br>
+		<br>
+		<div class="text-center">
+			<button type="button" class="btn btn-danger w-100" onclick="save_and_reset()">save and reset</button>
+		</div>
+	</div>
+
+	<div class="col">
+		<div class="container px-2">
+			<h2>Overlays</h2>
+			<hr>
+			{% for k,v in gv.overlays.items() %}
+			<div class='row g-0'>
+				<div class="col-1">
+					<input type="checkbox" class="form-check-input" id="cb_{{v['id']}}" onclick="check()" {% if v['checked']: %} checked {% endif %}>
+				</div>
+				<div class="col">
+					<span class="align-middle">&nbsp;{{ v['name'] }}</span>
+				</div>
+				{% for param in v['parameters'] %}
+				<div class="col-{{param['col']}}">
+					<input type="text" class="form-control bg-secondary text-white" value="{{param['value']}}" id="param_{{v['id']}}_{{param['name']}}">
+				</div>
+				{% endfor %}
+			</div>
+			{% endfor %}
+		</div>
+		<br>
+		<br>
+		<div class="row">
+			<div class="text-center">
+				<button type="button" class="btn btn-warning w-75" onclick="clear_indicators()">clear all indicators</button>
+			</div>
+		</div>
+		<br>
+		<div class="row">
+			<div class="text-center">
+				<button type="button" class="btn btn-warning w-75" onclick="reset_indicators()">reset indicators to default values</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="col">
+		<div class="container px-2">
+			<h2>Indicators</h2>
+			<hr>
+			{% for k,v in gv.indicators.items() %}
+			<div class="row g-0">
+				<div class="col-1">
+					<input type="checkbox" class="form-check-input" id="cb_{{ v['id'] }}" onclick="check()" {% if v['checked']: %} checked {% endif %}>
+				</div>
+				<div class="col">
+					<span class="align-middle">&nbsp;{{ v['name'] }}</span>
+				</div>
+				{% for param in v['parameters'] %}
+				<div class="col-{{param['col']}}">
+					<input type="text" class="form-control bg-secondary text-white" value="{{param['value']}}" id="param_{{v['id']}}_{{param['name']}}">
+				</div>
+				{% endfor %}
+			</div>
+			{% endfor %}
+		</div>
+		<br>
+		<br>
+		<div class="row">
+			<button type="button" class="btn btn-primary w-100" onclick="refresh_graph()">refresh graph</button>
+		</div>
+	</div>
+
+	<div class="col">
+		<div class="container px-2">
+			<h2>Game</h2>
+			<hr>
+			{% for k,v in gv.game_vars.items() %}
+			<div class="row g-1">
+				{% if 'name' in v.keys() %}
+					<div class="col"><span class="align-left">{{ v['name'] }}</span></div>
+					<div class="col"><span class="align-right">{{ v['value'] }}</span></div>
+				{% endif %}
+			</div>
+			{% endfor %}
+
+			<br>
+			<br>
+			<div class="row g-1">
+				<div class="col">
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="timeline" id="timeline_3_mon" value="3" onchange="chg_timeline(this)" {% if gv.game_vars['radiobutton']['3mo']: %} checked {% endif %}>
+						<label class="form-check-label" for="timeline_3_mon">&nbsp;3 months</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="timeline" id="timeline_6_mon" value="6" onchange="chg_timeline(this)" {% if gv.game_vars['radiobutton']['6mo']: %} checked {% endif %}>
+						<label class="form-check-label" for="timeline_6_mon">&nbsp;6 months</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="timeline" id="timeline_12_mon" value="12" onchange="chg_timeline(this)" {% if gv.game_vars['radiobutton']['12mo']: %} checked {% endif %}>
+						<label class="form-check-label" for="timeline_12_mon">&nbsp;12 months</label>
+					</div>
+				</div>
+			</div>
+			<br>
+			<br>
+			<div class="row g-1">
+				<div class="col-1"><input type="checkbox" class="form-check-input" id="stop_loss_check" onclick="set_stoploss()" {% if gv.game_vars['stop_loss']['set']: %}checked{% endif %} {% if not gv.game_vars['stock']['bought']: %}disabled{% endif %}></div>
+			  <div class="col"><span class="align-middle">&nbsp;Set Stop Loss</span></div>
+			  <div class="col"><input type="text" class="form-control bg-secondary text-white" id="stop_loss_value" value="{{ gv.game_vars['stop_loss']['value'] }}" {% if gv.game_vars['stop_loss']['set']: %}disabled{% endif %}></div>
+			</div>
+			<br>
+			<br>
+			<div class="row">
+				<div class="col-sm-6">				
+					<button type="button" class="btn btn-primary w-100" onclick="forward(1)">fwd 1 day</button>
+				</div>
+				<div class="col-sm-6">	
+					<button type="button" class="btn btn-primary w-100" onclick="forward(5)">fwd 1 week</button>
+				</div>
+			</div>
+			<br>
+			<div class="row">
+				<div class="col-sm-6">				
+					<button type="button" class="btn btn-primary w-100" onclick="buy_sell()">{% if not gv.game_vars['stock']['bought']: %} buy {% else %} sell {% endif %}</button>
+				</div>
+				<div class="col-sm-6">
+					{% if not gv.game_vars['stock']['bought'] %}
+					<button type="button" class="btn btn-primary w-100" onclick="next()">next</button>
+					{% endif %}
+				</div>
+			</div>
+			</div>
+		</div>
+	</div>
+
+</div>
+
+<!-- todo: clean up and offload to ext file -->
+
+<script>
+
+	// here for future use, called when overlays or indicators checked
+	function check() {
+		console.log('check');
+	}
+
+	function set_stoploss(){
+		var sl_value = document.getElementById('stop_loss_value').value;
+		const request = new XMLHttpRequest();
+		request.open('POST', `/set_stoploss/${sl_value}`);
+		request.send();
+		refresh_graph();
+	}
+
+	function clear_indicators(){
+		window.location.href = '/clear_indicators'
+	}
+
+	function buy_sell(){
+		window.location.href = '/buy_sell'
+	}
+
+	function send_params(){
+		var req_data = {};
+	
+		// overlay build
+		{% for k,v in gv.overlays.items() %}
+			req_data['{{ k }}'] = {};
+
+			let cb_{{ v['id'] }} = document.getElementById("cb_{{v['id']}}");
+			req_data['{{ k }}']['checked'] = cb_{{v['id']}}.checked;
+
+			{%  for param in v['parameters'] %}
+				let param_{{ v['id'] }}_{{ param['name'] }} = document.getElementById("param_{{v['id']}}_{{param['name']}}");
+				req_data['{{ k }}']['{{ param['name']}}'] = param_{{ v['id'] }}_{{ param['name'] }}.value;
+			{%  endfor %}
+		{% endfor %}
+
+
+		// indicator build
+		{% for k,v in gv.indicators.items() %}
+			req_data['{{ k }}'] = {};
+			
+			let cb_{{ v['id'] }} = document.getElementById("cb_{{v['id']}}");
+			req_data['{{ k }}']['checked'] = cb_{{v['id']}}.checked;
+
+			{%  for param in v['parameters'] %}
+				let param_{{ v['id'] }}_{{ param['name'] }} = document.getElementById("param_{{v['id']}}_{{param['name']}}");
+				req_data['{{ k }}']['{{ param['name']}}'] = param_{{ v['id'] }}_{{ param['name'] }}.value;
+			{%  endfor %}
+		{% endfor %}
+		
+		console.log(req_data);
+
+		const request = new XMLHttpRequest();
+		request.open('POST', `/update_params/${JSON.stringify(req_data)}`);
+		request.send();
+	}
+
+	function chg_timeline(src) {
+		const request = new XMLHttpRequest();
+		request.open('POST', `/change_timeline/${src.value}`);
+		request.send();
+		refresh_graph();
+	}
+
+	function forward(num_days){
+		const request = new	XMLHttpRequest();
+		request.open('POST', `/forward/${num_days}`);
+		request.send();
+		refresh_graph();
+	}
+
+	function refresh_graph(){
+		console.log('refreshing');
+		send_params();
+		window.location.href = '/graph_refresh'
+	}
+
+	function reset_indicators(){
+		window.location.href = '/reset_values'
+	}
+
+	function next(){
+		console.log('getting next')
+		window.location.href = '/next'
+	}
+
+	function stoploss_executed(){
+		var stoploss_msg = "Stoploss set for {{ gv.game_vars['stop_loss']['value'] }} triggered on at price {{ gv.game_vars['stop_loss']['price_executed'] }}";
+		alert(stoploss_msg);
+		const request = new XMLHttpRequest();
+		request.open('POST', '/stoploss_executed');
+		request.send();
+		refresh_graph();
+	}
+
+	function save_and_reset(){
+		window.location.href = '/save_and_reset'
+	}
+
+	{% if gv.game_vars['stop_loss']['triggered'] %} stoploss_executed() {% endif %}
+
+	</script>
+
+{% endblock %}

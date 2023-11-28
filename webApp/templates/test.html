@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Guess App 2.0{% endblock %}
+
+{% block content %}
+	<h2>Game Over</h2>
+
+	<script> 
+		setTimeout(index_redir, 5000);
+
+		function index_redir(){
+			window.location.href = '/'
+		}
+	</script>
+{% endblock %}
